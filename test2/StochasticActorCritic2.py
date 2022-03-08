@@ -5,14 +5,15 @@ import gym
 import numpy as np
 from collections import deque
 from GaussianPolicy import GaussianPolicy
+from GaussianPolicy2 import GaussianPolicy2
 from ValueFunction import ValueFunction
 from QFunctionStochastic import QFunctionStochastic
 
 
-class StochasticActorCritic:
+class StochasticActorCritic2:
     def __init__(self):
         self.gama = 0.99
-        self.num_episodes = 2000
+        self.num_episodes = 1000
         self.max_steps = 250
         self.a_y = 0.0005
         self.a_q = 0.005
@@ -32,11 +33,12 @@ class StochasticActorCritic:
         self.init_env_information()
         # init weight
         self.y = torch.zeros([self.state_space, self.action_space])
+        self.x = torch.zeros([self.state_space, self.action_space])
         self.q = torch.zeros([self.state_space + 1, self.action_space])
         self.v = torch.zeros([self.state_space, self.action_space])
 
         # init network
-        self.policy = GaussianPolicy(self.y)
+        self.policy = GaussianPolicy2(self.y, self.x)
         self.Q = QFunctionStochastic(self.q)
         self.V = ValueFunction(self.v)
 
@@ -88,6 +90,7 @@ class StochasticActorCritic:
             # θ_update = td_V * μ.get_grad(state_tensor, action)
 
             y_update = td_V * self.policy.get_grad(state_tensor, action)
+            x_update = td_V * self.policy.get_grad(state_tensor, action)
 
             # A_s = self.Q(state_tensor, action) - self.V(state_tensor)
             # A_s_next = self.Q(new_state_tensor, new_action) - self.V(new_state_tensor)
@@ -123,7 +126,10 @@ class StochasticActorCritic:
             s__ = np.vstack(s__).astype(np.float32)
             # a = torch.Tensor([[action.item()]])
             # ϕ_sa = torch.from_numpy(s__)
-            ϕ_sa = torch.tensor([s1, s2, a])
+
+            s_1 = np.vstack((s1, s2, a))
+            ϕ_sa = torch.from_numpy(s_1)
+            # ϕ_sa = torch.tensor([s1, s2, a])
 
             # ϕ_sa = torch.cat((state_tensor, a), 0)
             q_update = td_V.detach() * ϕ_sa.detach()
@@ -145,6 +151,10 @@ class StochasticActorCritic:
             else:
                 self.policy.y = self.policy.y.detach() + self.a_y * y_update
 
+            if abs(self.policy.x[0]) > 20 or abs(self.policy.x[1]) > 20:
+                self.policy.x = self.policy.x / 20
+            else:
+                self.policy.x = self.policy.x.detach() + self.a_y * x_update
             # μ.θ.requires_grad = True
 
             # Q.w = Q.w.detach() + αw * w_update
@@ -175,7 +185,11 @@ class StochasticActorCritic:
                     # print(f'weight {self.policy.y}')
 
                 # sample random action from action space
-                action = env.action_space.sample()[0]
+                # action = env.action_space.sample()[0]
+                current_state = self.normalize_state(state)
+                state_tensor = torch.from_numpy(current_state).float().unsqueeze(1)
+                action = self.policy.choose_action(state_tensor)
+
                 # print(action)
                 # env.render()
                 # step env

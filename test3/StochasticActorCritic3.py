@@ -9,10 +9,10 @@ from ValueFunction import ValueFunction
 from QFunctionStochastic import QFunctionStochastic
 
 
-class StochasticActorCritic:
+class StochasticActorCritic3:
     def __init__(self):
         self.gama = 0.99
-        self.num_episodes = 2000
+        self.num_episodes = 1000
         self.max_steps = 250
         self.a_y = 0.0005
         self.a_q = 0.005
@@ -119,11 +119,16 @@ class StochasticActorCritic:
             a = np.copy(a_)
             s1 = s[0]
             s2 = s[1]
-            s__ = np.array([s1, s2, a[0]], dtype=object)
-            s__ = np.vstack(s__).astype(np.float32)
+            # s__ = np.array([s1, s2, a[0]], dtype=object)
+            # s__ = np.vstack(s__).astype(np.float32)
             # a = torch.Tensor([[action.item()]])
             # ϕ_sa = torch.from_numpy(s__)
-            ϕ_sa = torch.tensor([s1, s2, a])
+
+
+            s_1 = np.vstack((s1, s2, a))
+            ϕ_sa = torch.from_numpy(s_1)
+            # ϕ_sa = torch.tensor([s1, s2, a])
+
 
             # ϕ_sa = torch.cat((state_tensor, a), 0)
             q_update = td_V.detach() * ϕ_sa.detach()
@@ -265,12 +270,3 @@ class StochasticActorCritic:
         normalized = (state - self.state_mean) / self.state_std
 
         return normalized
-
-
-def main():
-    ac = StochasticActorCritic()
-    ac.learn()
-
-
-if __name__ == "__main__":
-    main()

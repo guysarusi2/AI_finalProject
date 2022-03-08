@@ -1,0 +1,3 @@
+FINAL==== FEATURE = [S1,S2] / [S1,S2,A]
+
+TEST==== FEATURE = [1,S1,S2,s1*s2] / [1,S1,S2,A,s1*s2,s1*a,s2*a]

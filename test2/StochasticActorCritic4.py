@@ -9,7 +9,7 @@ from ValueFunction import ValueFunction
 from QFunctionStochastic import QFunctionStochastic
 
 
-class StochasticActorCritic:
+class StochasticActorCritic4:
     def __init__(self):
         self.gama = 0.99
         self.num_episodes = 2000
@@ -18,7 +18,7 @@ class StochasticActorCritic:
         self.a_q = 0.005
         self.a_v = 0.005
         self.BATCH_SIZE = 512
-        self.replay_buffer = deque(maxlen=10000)
+        self.replay_buffer = deque(maxlen=20000)
         # self.y = None
         # self.w = None
         # self.v = None
@@ -123,7 +123,12 @@ class StochasticActorCritic:
             s__ = np.vstack(s__).astype(np.float32)
             # a = torch.Tensor([[action.item()]])
             # ϕ_sa = torch.from_numpy(s__)
-            ϕ_sa = torch.tensor([s1, s2, a])
+
+            s_1 = np.vstack((s1, s2, a))
+            ϕ_sa = torch.from_numpy(s_1)
+            # ϕ_sa = torch.tensor([s1, s2, a])
+
+
 
             # ϕ_sa = torch.cat((state_tensor, a), 0)
             q_update = td_V.detach() * ϕ_sa.detach()

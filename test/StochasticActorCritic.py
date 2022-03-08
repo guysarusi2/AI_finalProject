@@ -4,6 +4,7 @@ import torch
 import gym
 import numpy as np
 from collections import deque
+import DeterministicPolicy
 from GaussianPolicy import GaussianPolicy
 from ValueFunction import ValueFunction
 from QFunctionStochastic import QFunctionStochastic
@@ -17,8 +18,8 @@ class StochasticActorCritic:
         self.a_y = 0.0005
         self.a_q = 0.005
         self.a_v = 0.005
-        self.BATCH_SIZE = 512
-        self.replay_buffer = deque(maxlen=10000)
+        self.BATCH_SIZE = 8
+        self.replay_buffer = deque(maxlen=8000)
         # self.y = None
         # self.w = None
         # self.v = None
@@ -31,9 +32,13 @@ class StochasticActorCritic:
         self.state_std = None
         self.init_env_information()
         # init weight
-        self.y = torch.zeros([self.state_space, self.action_space])
-        self.q = torch.zeros([self.state_space + 1, self.action_space])
-        self.v = torch.zeros([self.state_space, self.action_space])
+        # self.y = torch.zeros([self.state_space, self.action_space])
+        # self.q = torch.zeros([self.state_space + 1, self.action_space])
+        # self.v = torch.zeros([self.state_space, self.action_space])
+
+        self.y = torch.zeros([self.state_space + 2, self.action_space])
+        self.q = torch.zeros([self.state_space + 5, self.action_space])
+        self.v = torch.zeros([self.state_space + 2, self.action_space])
 
         # init network
         self.policy = GaussianPolicy(self.y)
@@ -110,25 +115,23 @@ class StochasticActorCritic:
             # calculate w update
             # get state-action features
             # ϕ_sa = (action - μ.choose_action(state_tensor)) * jacob_matrix
-            # a_np = action.numpy()
-            # a_copy = np.copy(a_np)
-            # a = torch.from_numpy(a_copy)
             s_ = state_tensor.numpy()
             s = np.copy(s_)
             a_ = action.numpy()
             a = np.copy(a_)
             s1 = s[0]
             s2 = s[1]
-            s__ = np.array([s1, s2, a[0]], dtype=object)
-            s__ = np.vstack(s__).astype(np.float32)
-            # a = torch.Tensor([[action.item()]])
-            # ϕ_sa = torch.from_numpy(s__)
-            ϕ_sa = torch.tensor([s1, s2, a])
+            a = a[0]
 
+            ϕ_sa = torch.tensor([[1.], [s1], [s2], [a], [s1 * s2], [s1 * a], [s2 * a]])
+            p = torch.tensor([[1.], [s1], [s2], [s1 * s2]])
+
+            # a = torch.Tensor([[action.item()]])
             # ϕ_sa = torch.cat((state_tensor, a), 0)
+
             q_update = td_V.detach() * ϕ_sa.detach()
-            v_update = td_V.detach() * state_tensor.detach()
-            # q_update = td_Q.detach() * ϕ_sa.detach()
+            # v_update = td_V.detach() * state_tensor.detach()
+            v_update = td_V.detach() * p.detach()
 
             # print(f'policy update {y_update}')
             # print(f'Q update {q_update}')
@@ -150,8 +153,11 @@ class StochasticActorCritic:
             # Q.w = Q.w.detach() + αw * w_update
             # V.v = V.v.detach() + αv * v_update
 
+            # print(f'Q {self.Q.q}')
+            # print(f'Q update {self.a_q*q_update}')
             self.Q.q = self.Q.q.detach() + self.a_q * q_update
             self.V.v = self.V.v.detach() + self.a_v * v_update
+            # print(f'Q {self.Q.q}')
 
     def learn(self):
         scores = []
@@ -167,10 +173,10 @@ class StochasticActorCritic:
                 if step % 5000 == 0 and step != 0:
                     # env2 = gym.make('MountainCarContinuous-v0')
                     # re = self.simulation(env2)
-                    re = self.n_simulation(env2, 100)
+                    re = self.n_simulation(env2, 30)
+                    # env2.close()
                     scores.append(re)
                     indexes.append(step)
-                    # env2.close()
                     # print(f'step {step} reward {re}')
                     # print(f'weight {self.policy.y}')
 
@@ -198,8 +204,7 @@ class StochasticActorCritic:
                 self.replay_buffer.append(item)
 
                 # every 10 steps, sample batch and update parameters
-                # if i % 10 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
-                if step % 5000 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
+                if i % 10 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
                     # print(step)
                     replay = random.sample(self.replay_buffer, self.BATCH_SIZE)
                     # print(replay)
@@ -230,10 +235,10 @@ class StochasticActorCritic:
         # env.close()
         return total
 
-    def n_simulation(self, env2, n):
+    def n_simulation(self, env, n):
         sum = 0
         for i in range(n):
-            sum += self.simulation(env2)
+            sum += self.simulation(env)
         return sum / n
 
     def mult(self, weight_vector, feature_vector):

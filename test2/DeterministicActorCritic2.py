@@ -11,7 +11,7 @@ from QFunctionDeterministic import QFunctionDeterministic
 class DeterministicActorCritic:
     def __init__(self):
         self.gama = 0.99
-        self.num_episodes = 1000
+        self.num_episodes = 800
         self.max_steps = 250
         self.a_y = 0.0005
         self.a_q = 0.005
@@ -98,7 +98,7 @@ class DeterministicActorCritic:
 
                 # every 10 steps, sample batch and update parameters
                 # if i % 10 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
-                if step % 100 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
+                if step % 1000 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
                     # print(step)
                     replay = random.sample(self.replay_buffer, self.BATCH_SIZE)
                     # print(replay)

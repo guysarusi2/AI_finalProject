@@ -225,12 +225,3 @@ class DeterministicActorCritic:
                 break
         # env.close()
         return total
-
-
-def main():
-    ac = DeterministicActorCritic()
-    ac.learn()
-
-
-if __name__ == "__main__":
-    main()

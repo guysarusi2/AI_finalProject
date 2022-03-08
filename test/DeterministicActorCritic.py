@@ -11,13 +11,13 @@ from QFunctionDeterministic import QFunctionDeterministic
 class DeterministicActorCritic:
     def __init__(self):
         self.gama = 0.99
-        self.num_episodes = 1000
+        self.num_episodes = 2000
         self.max_steps = 250
         self.a_y = 0.0005
         self.a_q = 0.005
         self.a_v = 0.005
-        self.BATCH_SIZE = 32
-        self.replay_buffer = deque(maxlen=10000)
+        self.BATCH_SIZE = 8
+        self.replay_buffer = deque(maxlen=8000)
         self.state_space = None
         self.action_space = None
         self.state_mean = None
@@ -25,10 +25,15 @@ class DeterministicActorCritic:
         self.init_env_information()
 
         # init_weights
-        self.y = torch.zeros([self.state_space, self.action_space])
+        self.y = torch.zeros([self.state_space + 2, self.action_space])
         self.y.requires_grad = True
-        self.q = torch.zeros([self.state_space, self.action_space])
-        self.v = torch.zeros([self.state_space, self.action_space])
+        self.q = torch.zeros([self.state_space + 2, self.action_space])
+        self.v = torch.zeros([self.state_space + 2, self.action_space])
+
+        # self.y = torch.zeros([self.state_space, self.action_space])
+        # self.y.requires_grad = True
+        # self.q = torch.zeros([self.state_space, self.action_space])
+        # self.v = torch.zeros([self.state_space, self.action_space])
         # init network
         self.policy = DeterministicPolicy(self.y)
         self.Q = QFunctionDeterministic(self.q)
@@ -55,8 +60,9 @@ class DeterministicActorCritic:
         self.V = ValueFunction(self.v)
 
     def learn(self):
-        scores = []
         indexes = []
+        scores = []
+
         env = gym.make('MountainCarContinuous-v0')
         step = 0
         env2 = gym.make('MountainCarContinuous-v0')
@@ -97,8 +103,7 @@ class DeterministicActorCritic:
                 self.replay_buffer.append(item)
 
                 # every 10 steps, sample batch and update parameters
-                # if i % 10 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
-                if step % 100 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
+                if i % 10 == 0 and len(self.replay_buffer) > self.BATCH_SIZE:
                     # print(step)
                     replay = random.sample(self.replay_buffer, self.BATCH_SIZE)
                     # print(replay)

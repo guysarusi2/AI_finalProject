@@ -41,12 +41,16 @@ class QFunctionStochastic():
         s__ = np.array([s1, s2, a[0]], dtype=object)
         # print(s__)
         s__ = np.vstack(s__).astype(np.float64)
+        s_1 = np.vstack((s1, s2, a))
+        s = torch.from_numpy(s_1)
+
         # print(s__)
 
         # a = torch.Tensor([[action.item()]])
         # s = torch.cat((state, a), 0)
         # s = torch.from_numpy(s__)
-        s = torch.tensor([s1, s2, a])
+        s = torch.from_numpy(s_1)
+        # s = torch.tensor([s1, s2, a])
         q_val = torch.matmul(torch.transpose(self.q, 0, 1), s)
 
         return q_val
