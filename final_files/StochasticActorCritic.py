@@ -9,7 +9,7 @@ from ValueFunction import ValueFunction
 class StochasticActorCritic:
     def __init__(self):
         self.gama = 0.99
-        self.num_episodes = 1000
+        self.num_episodes = 900
         self.max_steps = 250
         self.a_y = 0.0005
         self.a_v = 0.005
